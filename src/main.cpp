@@ -138,7 +138,34 @@ int main() {
         //
         // Use SOFT_LIMIT_PERCENT and HARD_LIMIT_PERCENT to parameterize the green and red
         // line positions.
-        camera.setCameraCenter({player.position.x, WINDOW_HEIGHT * 0.5f});
+        
+        // Find the player's center in window coordinates
+        sf::Vector2f playerWindow = camera.worldToWindow(player.position);
+        // Find the green and red line positions in window
+        float leftSoft = WINDOW_WIDTH * SOFT_LIMIT_PERCENT;
+        float rightSoft = WINDOW_WIDTH * (1.0f - SOFT_LIMIT_PERCENT);
+        float leftHard = WINDOW_WIDTH * HARD_LIMIT_PERCENT;
+        float rightHard = WINDOW_WIDTH * (1.0f - HARD_LIMIT_PERCENT);
+
+        // If the player center is in the hard zone: immediately adjust the camera
+        if (playerWindow.x < leftHard) {
+            // Move x-axis by playerWindow.x - leftHard to set the camera at the left hard
+            camera.translateWindow({playerWindow.x - leftHard, 0});
+        }
+        else if (playerWindow.x > rightHard) {
+            // Move x-axis by playerWindow.x - rightHard to set the camera at the right hard
+            camera.translateWindow({playerWindow.x - rightHard, 0});
+        }
+        // Soft exclusion zones: smoothly adjust the camera using EMA
+        else if (playerWindow.x < leftSoft) {
+            float delta = playerWindow.x - leftSoft;
+            // move horizontally by the displacement multiply by EMA
+            camera.translateWindow({SOFT_CAMERA_ALPHA * delta, 0});
+        }
+        else if (playerWindow.x > rightSoft) {
+            float delta = playerWindow.x - rightSoft;
+            camera.translateWindow({SOFT_CAMERA_ALPHA * delta, 0});
+        }
 
         worldView.setCenter(camera.getCameraCenter());
         window.clear(sf::Color::Black);
